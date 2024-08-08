@@ -1,4 +1,5 @@
 import requests
+import os
 
 # GitHub Names of members
 members = [
@@ -8,7 +9,14 @@ members = [
     "dominictosku"
 ]
 
-readme_path = "../README.md"
+# Define file paths
+file_paths = [
+    os.path.join(os.path.dirname(__file__), "..", "README.md"),
+    os.path.join(os.path.dirname(__file__), "..", "profile", "README.md")
+]
+
+# Convert paths to absolute
+file_paths = [os.path.abspath(path) for path in file_paths]
 
 # README Header
 readme_content = """
@@ -33,6 +41,11 @@ for username in members:
     response = requests.get(f"https://api.github.com/users/{username}")
     data = response.json()
     
+    # Kill the script if the API limit is reached
+    if "message" in data:
+        print("API limit reached")
+        break
+
     name = data.get("name", username)
     bio = data.get("bio", "")
     avatar_url = data["avatar_url"]
@@ -47,6 +60,11 @@ for username in members:
 
     readme_content += f"| ![{name}]({avatar_url}) | {name}{bio_text} | [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)]({github_url}) | {blog_link} |\n"
 
-# Update README
-with open(readme_path, "w", encoding="utf-8") as readme_file:
-    readme_file.write(readme_content)
+# Update files
+for path in file_paths:
+    try:
+        with open(path, "w", encoding="utf-8") as file:
+            file.write(readme_content)
+        print(f"Successfully updated {path}")
+    except Exception as e:
+        print(f"Error updating {path}: {e}")
